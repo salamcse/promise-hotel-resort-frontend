@@ -11,6 +11,7 @@ import confetti from 'canvas-confetti';
 import { Language } from '../types';
 import { INVESTMENT_PACKAGES } from '../data/projectData';
 import { isValid11DigitPhone, isValidEmail } from '../utils/validators';
+import { submitInquiry } from '../utils/api';
 
 interface ContactPreviewModalProps {
   isOpen: boolean;
@@ -32,10 +33,11 @@ export const ContactPreviewModal: React.FC<ContactPreviewModalProps> = ({
     name: '',
     phone: '',
     email: '',
-    packageId: 'plan_500k',
+    packageId: 'explorer',
     message: ''
   });
   const [errors, setErrors] = useState<{ phone?: string; email?: string; general?: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -54,7 +56,7 @@ export const ContactPreviewModal: React.FC<ContactPreviewModalProps> = ({
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: { phone?: string; email?: string; general?: string } = {};
 
@@ -66,8 +68,8 @@ export const ContactPreviewModal: React.FC<ContactPreviewModalProps> = ({
       newErrors.phone = isEn ? 'Phone number is required.' : 'ফোন নম্বর আবশ্যক।';
     } else if (!isValid11DigitPhone(formData.phone)) {
       newErrors.phone = isEn 
-        ? 'Please enter a valid 11-digit mobile number (e.g. 017XXXXXXXX).' 
-        : 'অনুগ্রহ করে ১১ ডিজিটের সঠিক মোবাইল নম্বর দিন (যেমন: ০১৭১২-৩৪৫৬৭৮)।';
+        ? 'Please enter a valid phone number (e.g. 017XXXXXXXX).' 
+        : 'অনুগ্রহ করে সঠিক মোবাইল নম্বর দিন (যেমন: ০১৭১২-৩৪৫৬৭৮)।';
     }
 
     if (!formData.email.trim()) {
@@ -84,19 +86,31 @@ export const ContactPreviewModal: React.FC<ContactPreviewModalProps> = ({
     }
 
     setErrors({});
-    try {
-      fetch("/api/inquiries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          phone: formData.phone.trim(),
-          email: formData.email.trim() || undefined,
-          packageType: `Contact Form: ${formData.packageId}`,
-          message: formData.message.trim() || "Contact Consultation Request",
-        }),
-      }).catch((err) => console.warn("Inquiry error:", err));
-    } catch (e) {}
+    setIsSubmitting(true);
+
+    const selectedPkg = INVESTMENT_PACKAGES.find((p) => p.id === formData.packageId);
+    const pkgLabel = selectedPkg ? selectedPkg.name : formData.packageId;
+
+    const result = await submitInquiry({
+      name: formData.name,
+      phone: formData.phone,
+      email: formData.email,
+      packageType: `Contact Inquiry: ${pkgLabel}`,
+      shareCount: selectedPkg?.projectShares || 1,
+      message: formData.message || "Contact Consultation Request",
+    });
+
+    setIsSubmitting(false);
+
+    if (!result.success) {
+      setErrors({
+        general: isEn 
+          ? 'Unable to save inquiry request. Please try again or call our advisory desk directly.' 
+          : 'অনুসন্ধান আবেদন সংরক্ষণ করা যায়নি। অনুগ্রহ করে পুনরায় চেষ্টা করুন অথবা সরাসরি যোগাযোগ করুন।'
+      });
+      return;
+    }
+
     setIsSubmitted(true);
     try {
       confetti({
@@ -116,7 +130,7 @@ export const ContactPreviewModal: React.FC<ContactPreviewModalProps> = ({
       name: '',
       phone: '',
       email: '',
-      packageId: 'plan_500k',
+      packageId: 'explorer',
       message: ''
     });
     onClose();
@@ -278,7 +292,7 @@ export const ContactPreviewModal: React.FC<ContactPreviewModalProps> = ({
                         <input
                           type="tel"
                           required
-                          maxLength={14}
+                          maxLength={20}
                           value={formData.phone}
                           onChange={handlePhoneChange}
                           onBlur={() => {
@@ -362,9 +376,10 @@ export const ContactPreviewModal: React.FC<ContactPreviewModalProps> = ({
                     <div className="pt-1">
                       <button
                         type="submit"
-                        className="w-full px-6 py-3 text-xs font-bold uppercase tracking-wider transition-all duration-300 group bg-[#E5C378] text-[#0B1B3D] hover:bg-[#0B1B3D] hover:text-white cursor-pointer flex items-center justify-center shadow-sm"
+                        disabled={isSubmitting}
+                        className="w-full px-6 py-3 text-xs font-bold uppercase tracking-wider transition-all duration-300 group bg-[#E5C378] text-[#0B1B3D] hover:bg-[#0B1B3D] hover:text-white cursor-pointer flex items-center justify-center shadow-sm disabled:opacity-50"
                       >
-                        <span>{isEn ? "Request Call Back" : "কল ব্যাকের অনুরোধ জানান"}</span>
+                        <span>{isSubmitting ? (isEn ? "Submitting..." : "জমা হচ্ছে...") : (isEn ? "Request Call Back" : "কল ব্যাকের অনুরোধ জানান")}</span>
                       </button>
                     </div>
                   </form>

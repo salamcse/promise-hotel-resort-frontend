@@ -14,6 +14,7 @@ import {
 import confetti from 'canvas-confetti';
 import { Language } from '../types';
 import { isValid11DigitPhone, isValidEmail } from '../utils/validators';
+import { submitInquiry } from '../utils/api';
 
 interface TalkToAdvisorModalProps {
   isOpen: boolean;
@@ -105,28 +106,26 @@ export const TalkToAdvisorModal: React.FC<TalkToAdvisorModalProps> = ({
     setIsSubmitting(true);
     setErrors({});
 
-    try {
-      // Post to backend inquiries API
-      const res = await fetch('/api/inquiries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.fullName.trim(),
-          phone: formData.mobileNumber.trim(),
-          email: formData.emailId.trim() || undefined,
-          packageType: `Advisor Request: ${formData.inquiryTopic}`,
-          shareCount: 1,
-          message: formData.description.trim() || undefined,
-        }),
-      });
-      if (!res.ok) {
-        console.error('Advisor inquiry POST returned non-ok status:', res.status);
-      }
-    } catch (err) {
-      console.warn('Advisor inquiry saved locally (offline mode fallback).', err);
-    }
+    const result = await submitInquiry({
+      name: formData.fullName,
+      phone: formData.mobileNumber,
+      email: formData.emailId,
+      packageType: `Advisor Request: ${formData.inquiryTopic}`,
+      shareCount: 1,
+      message: formData.description || "Advisor Consultation Request",
+    });
 
     setIsSubmitting(false);
+
+    if (!result.success) {
+      setErrors({
+        general: isEn 
+          ? 'Unable to save request. Please try again or call our hotline directly.' 
+          : 'অনুরোধ সংরক্ষণ করা যায়নি। অনুগ্রহ করে পুনরায় চেষ্টা করুন অথবা সরাসরি যোগাযোগ করুন।'
+      });
+      return;
+    }
+
     setIsSubmitted(true);
 
     // Trigger subtle celebratory confetti

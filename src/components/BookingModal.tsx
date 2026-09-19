@@ -14,6 +14,7 @@ import {
 import confetti from 'canvas-confetti';
 import { Language, Currency } from '../types';
 import { isValid11DigitPhone, isValidEmail } from '../utils/validators';
+import { submitInquiry } from '../utils/api';
 
 interface BookingModalProps {
   isOpen: boolean;
@@ -109,26 +110,26 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     const refCode = `PROMISE-RES-${Math.floor(100000 + Math.random() * 900000)}`;
     setBookingRef(refCode);
 
-    try {
-      const res = await fetch('/api/inquiries', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.fullName.trim(),
-          phone: formData.phone.trim(),
-          email: formData.email.trim() || undefined,
-          packageType: initialPackageId ? `Package: ${initialPackageId}` : 'Co-Ownership Share Allotment',
-          message: `Location: ${formData.cityCountry || 'N/A'}, Preferred Contact: ${formData.preferredContact}. Notes: ${formData.notes || 'None'}`
-        })
-      });
-      if (!res.ok) {
-        console.error('Inquiry POST returned non-ok status:', res.status);
-      }
-    } catch (err) {
-      console.warn('Inquiry submission network error:', err);
-    }
+    const result = await submitInquiry({
+      name: formData.fullName,
+      phone: formData.phone,
+      email: formData.email,
+      packageType: initialPackageId ? `Package: ${initialPackageId}` : 'Co-Ownership Share Allotment',
+      shareCount: 1,
+      message: `Location: ${formData.cityCountry || 'N/A'}, Preferred Contact: ${formData.preferredContact}. Notes: ${formData.notes || 'None'}`
+    });
 
     setIsSubmitting(false);
+
+    if (!result.success) {
+      setErrors({
+        general: isEn 
+          ? 'Unable to save reservation request. Please try again or call our 24/7 hotline directly.' 
+          : 'বুকিং আবেদন সংরক্ষণ করা যায়নি। অনুগ্রহ করে পুনরায় চেষ্টা করুন অথবা আমাদের ২৪/৭ হটলাইনে যোগাযোগ করুন।'
+      });
+      return;
+    }
+
     setIsSubmitted(true);
 
     try {

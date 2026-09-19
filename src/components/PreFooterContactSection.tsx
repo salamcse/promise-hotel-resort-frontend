@@ -10,6 +10,7 @@ import {
 import { Language } from '../types';
 import { INVESTMENT_PACKAGES } from '../data/projectData';
 import { isValid11DigitPhone, isValidEmail } from '../utils/validators';
+import { submitInquiry } from '../utils/api';
 
 interface PreFooterContactSectionProps {
   language?: Language;
@@ -23,10 +24,11 @@ export const PreFooterContactSection: React.FC<PreFooterContactSectionProps> = (
     name: '',
     phone: '',
     email: '',
-    packageId: 'plan_500k',
+    packageId: 'explorer',
     message: ''
   });
   const [errors, setErrors] = useState<{ phone?: string; email?: string; general?: string }>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -45,7 +47,7 @@ export const PreFooterContactSection: React.FC<PreFooterContactSectionProps> = (
     }
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors: { phone?: string; email?: string; general?: string } = {};
 
@@ -75,19 +77,31 @@ export const PreFooterContactSection: React.FC<PreFooterContactSectionProps> = (
     }
 
     setErrors({});
-    try {
-      fetch("/api/inquiries", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          phone: formData.phone.trim(),
-          email: formData.email.trim() || undefined,
-          packageType: `Pre-Footer Consultation: ${formData.packageId}`,
-          message: formData.message.trim() || "Consultation Request",
-        }),
-      }).catch((err) => console.warn("Inquiry error:", err));
-    } catch (e) {}
+    setIsSubmitting(true);
+
+    const selectedPkg = INVESTMENT_PACKAGES.find((p) => p.id === formData.packageId);
+    const pkgLabel = selectedPkg ? selectedPkg.name : formData.packageId;
+
+    const result = await submitInquiry({
+      name: formData.name,
+      phone: formData.phone,
+      email: formData.email,
+      packageType: `Pre-Footer Consultation: ${pkgLabel}`,
+      shareCount: selectedPkg?.projectShares || 1,
+      message: formData.message || "Pre-Footer Consultation Request",
+    });
+
+    setIsSubmitting(false);
+
+    if (!result.success) {
+      setErrors({
+        general: isEn 
+          ? 'Unable to save request. Please try again or call our hotline directly.' 
+          : 'অনুরোধ সংরক্ষণ করা যায়নি। অনুগ্রহ করে পুনরায় চেষ্টা করুন অথবা সরাসরি যোগাযোগ করুন।'
+      });
+      return;
+    }
+
     setIsSubmitted(true);
   };
 
@@ -98,7 +112,7 @@ export const PreFooterContactSection: React.FC<PreFooterContactSectionProps> = (
       name: '',
       phone: '',
       email: '',
-      packageId: 'plan_500k',
+      packageId: 'explorer',
       message: ''
     });
   };
@@ -254,7 +268,7 @@ export const PreFooterContactSection: React.FC<PreFooterContactSectionProps> = (
                       <input
                         type="tel"
                         required
-                        maxLength={14}
+                        maxLength={20}
                         value={formData.phone}
                         onChange={handlePhoneChange}
                         onBlur={() => {
@@ -338,9 +352,9 @@ export const PreFooterContactSection: React.FC<PreFooterContactSectionProps> = (
                   <div className="pt-1">
                     <button
                       type="submit"
-                      className="w-full px-6 py-3.5 text-xs sm:text-sm font-bold uppercase tracking-[0.14em] transition-all duration-300 bg-[#E5C378] text-[#0B1B3D] hover:bg-[#0B1B3D] hover:text-white cursor-pointer text-center justify-center shadow-sm"
+                      disabled={isSubmitting} className="w-full px-6 py-3.5 text-xs sm:text-sm font-bold uppercase tracking-[0.14em] transition-all duration-300 bg-[#E5C378] text-[#0B1B3D] hover:bg-[#0B1B3D] hover:text-white cursor-pointer text-center justify-center shadow-sm disabled:opacity-50"
                     >
-                      {isEn ? "Request Call Back" : "কল ব্যাকের অনুরোধ জানান"}
+                      {isSubmitting ? (isEn ? "Submitting..." : "জমা হচ্ছে...") : (isEn ? "Request Call Back" : "কল ব্যাকের অনুরোধ জানান")}
                     </button>
                   </div>
                 </form>
