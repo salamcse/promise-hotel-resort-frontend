@@ -107,18 +107,21 @@ export const TalkToAdvisorModal: React.FC<TalkToAdvisorModalProps> = ({
 
     try {
       // Post to backend inquiries API
-      await fetch('/api/inquiries', {
+      const res = await fetch('/api/inquiries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: formData.fullName.trim(),
           phone: formData.mobileNumber.trim(),
-          email: formData.emailId.trim() || 'N/A',
+          email: formData.emailId.trim() || undefined,
           packageType: `Advisor Request: ${formData.inquiryTopic}`,
           shareCount: 1,
-          message: formData.description.trim(),
+          message: formData.description.trim() || undefined,
         }),
       });
+      if (!res.ok) {
+        console.error('Advisor inquiry POST returned non-ok status:', res.status);
+      }
     } catch (err) {
       console.warn('Advisor inquiry saved locally (offline mode fallback).', err);
     }

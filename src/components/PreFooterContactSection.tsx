@@ -75,6 +75,19 @@ export const PreFooterContactSection: React.FC<PreFooterContactSectionProps> = (
     }
 
     setErrors({});
+    try {
+      fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          phone: formData.phone.trim(),
+          email: formData.email.trim() || undefined,
+          packageType: `Pre-Footer Consultation: ${formData.packageId}`,
+          message: formData.message.trim() || "Consultation Request",
+        }),
+      }).catch((err) => console.warn("Inquiry error:", err));
+    } catch (e) {}
     setIsSubmitted(true);
   };
 

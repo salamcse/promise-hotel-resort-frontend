@@ -26,7 +26,9 @@ interface BookingModalProps {
 export const BookingModal: React.FC<BookingModalProps> = ({
   isOpen,
   onClose,
-  language
+  language,
+  currency,
+  initialPackageId
 }) => {
   const isEn = language === 'en';
 
@@ -108,19 +110,22 @@ export const BookingModal: React.FC<BookingModalProps> = ({
     setBookingRef(refCode);
 
     try {
-      await fetch('/api/inquiries', {
+      const res = await fetch('/api/inquiries', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           name: formData.fullName.trim(),
           phone: formData.phone.trim(),
-          email: formData.email.trim(),
-          packageType: 'Co-Ownership Share Allotment',
+          email: formData.email.trim() || undefined,
+          packageType: initialPackageId ? `Package: ${initialPackageId}` : 'Co-Ownership Share Allotment',
           message: `Location: ${formData.cityCountry || 'N/A'}, Preferred Contact: ${formData.preferredContact}. Notes: ${formData.notes || 'None'}`
         })
       });
+      if (!res.ok) {
+        console.error('Inquiry POST returned non-ok status:', res.status);
+      }
     } catch (err) {
-      console.warn('Inquiry submission offline, continuing with confirmation.');
+      console.warn('Inquiry submission network error:', err);
     }
 
     setIsSubmitting(false);
@@ -206,7 +211,7 @@ export const BookingModal: React.FC<BookingModalProps> = ({
                       <input
                         type="tel"
                         required
-                        maxLength={14}
+                        maxLength={20}
                         value={formData.phone}
                         onChange={handlePhoneChange}
                         onBlur={() => {

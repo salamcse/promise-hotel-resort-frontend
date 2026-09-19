@@ -84,6 +84,19 @@ export const ContactPreviewModal: React.FC<ContactPreviewModalProps> = ({
     }
 
     setErrors({});
+    try {
+      fetch("/api/inquiries", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          phone: formData.phone.trim(),
+          email: formData.email.trim() || undefined,
+          packageType: `Contact Form: ${formData.packageId}`,
+          message: formData.message.trim() || "Contact Consultation Request",
+        }),
+      }).catch((err) => console.warn("Inquiry error:", err));
+    } catch (e) {}
     setIsSubmitted(true);
     try {
       confetti({
