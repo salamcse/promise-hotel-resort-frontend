@@ -87,15 +87,16 @@ export const ProjectLocationSection: React.FC<ProjectLocationSectionProps> = ({
             {/* Map Image Viewport (Fills entire container) */}
             <div className="absolute inset-0 w-full h-full bg-[#f1f4f8] overflow-hidden flex items-center justify-center">
               <img
-                src="/ChatGPT Image Sep 3, 2026, 03_05_27 PM.png"
+                src="/location_map_inani.png"
                 alt="The Promise Resort Inani Location Map"
                 onError={(e) => {
-                  if (e.currentTarget.src !== '/location_map_inani.png') {
-                    e.currentTarget.src = '/location_map_inani.png';
+                  const target = e.currentTarget;
+                  if (!target.src.endsWith("/location_map.png")) {
+                    target.src = "/location_map.png";
                   }
                 }}
                 className="w-full h-full object-cover object-center filter contrast-[1.02] group-hover:scale-[1.02] transition-transform duration-500"
-                referrerPolicy="no-referrer"
+                loading="eager"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-black/30 via-transparent to-black/10 pointer-events-none" />
             </div>
